@@ -1,0 +1,31 @@
+.body {
+    overflow: hidden;
+}
+
+.gameboard {
+    width: 600px;
+    height: 600px;
+    border: 1px solid black;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: cornflowerblue;
+}
+
+.playArea {
+    width: 500px;
+    height: 500px;
+    border: 1px solid black;
+    background-color: white;
+}
+
+.spider {
+    width: 10px;
+    height: 10px;
+    border: 1px solid black;
+    background-color: red;
+    border-radius: 50%;
+    position: absolute;
+    left: 20px;
+    top: 100px;
+}
