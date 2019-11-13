@@ -5,8 +5,9 @@
 .gameboard {
     width: 400px;
     height: 400px;
+    position: absolute;
     left: 20px;
-    top: 100px;
+    top: 50px;
     border: 1px solid black;
     display: flex;
     justify-content: center;
@@ -44,15 +45,5 @@
 #line {
     position: absolute;
     color: black;
-    background-color: black;
-}
-
-.aaa {
-    left: 500px;
-    top: 500px;
-    width: -200px;
-    height: 1px;
-    position: absolute;
-    color: red;
     background-color: black;
 }
