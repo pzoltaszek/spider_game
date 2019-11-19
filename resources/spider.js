@@ -1,4 +1,4 @@
-let BOUNDARY = null;
+let BOUNDARY = {};
 let PLAY_AREA = [];
 const SVGNS = "http://www.w3.org/2000/svg";
 const KEYS = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
@@ -10,15 +10,36 @@ let NUM = 0;
 let CANVAS_ID = 0;
 
 function start() {
-    //createGameBoard();
-    BOUNDARY = document.querySelector('.gameboard').getBoundingClientRect();
+    createBoundaryPoints();
     createSpider();
     updateInfo();
+    buildInitialPlayArea();
     setInitialPlayAreaBorders();
-    buildPlayArea();
 
+    asd();
     document.addEventListener('keydown', checkKeys);
 };
+
+function createBoundaryPoints() {
+    let boundary = document.querySelector('.gameboard').getBoundingClientRect();
+    BOUNDARY.left = Math.floor(boundary.left);
+    BOUNDARY.top = Math.floor(boundary.top);
+    BOUNDARY.left = Math.ceil(boundary.left);
+    BOUNDARY.right = Math.ceil(boundary.right);
+    BOUNDARY.width = Math.ceil(boundary.width);
+    BOUNDARY.height = Math.ceil(boundary.height);
+};
+
+function asd() {
+    for (let i = 0; i < PLAY_AREA.length; i++) {
+        let a = document.createElement('div');
+        let p = PLAY_AREA[i];
+        a.className = 'dot';
+        a.style.left = `${p.x}px`;
+        a.style.top = `${p.y}px`;
+        document.body.appendChild(a);
+    }
+}
 
 function Vector(x, y) {
     this.x = x;
@@ -38,12 +59,14 @@ function createGameBoard() {
 function createSpider(x, y) {
     let newSpider = document.createElement('div');
     newSpider.className = 'spider';
+    newSpider.style.width = '9px';
+    newSpider.style.height = '9px';
     if (!x && !y) {
         newSpider.style.left = '20px';
         newSpider.style.top = '100px'
     } else {
-        newSpider.style.left = `${x}px`;
-        newSpider.style.top = `${y}px`;
+        newSpider.style.left = `${x - 5}px`; //half of the width plus border
+        newSpider.style.top = `${y - 5}px`;
     }
     document.body.appendChild(newSpider);
 };
@@ -52,26 +75,29 @@ function removeSpider() {
     document.querySelector('.spider').remove();
 };
 
-function buildPlayArea() {
+function buildInitialPlayArea() {
     let svg = document.getElementById('playArea');
-    svg.setAttributeNS(null, 'width', `${Math.ceil(BOUNDARY.width -100)}px`);
-    svg.setAttributeNS(null, 'height', `${Math.ceil(BOUNDARY.height -100)}px`);
+    svg.setAttributeNS(null, 'width', `${BOUNDARY.width - 100}px`);
+    svg.setAttributeNS(null, 'height', `${BOUNDARY.height - 100}px`);
     let shape = document.createElementNS(SVGNS, "polygon");
     shape.setAttributeNS(null, "points", "0,0 300,0, 300,300 0,300");
     shape.setAttributeNS(null, "fill", "white");
-    shape.setAttributeNS(null, "fill", "white");
+    shape.setAttributeNS(null, "stroke", "black");
     svg.appendChild(shape);
 }
 
-function buildSafeArae2() {
+function buildSafeArea() {
     var svg2 = document.getElementById('playArea');
     var shape = document.createElementNS(SVGNS, "polygon");
-    shape.setAttributeNS(null, "points", "50, 50 100, 100, 100, 50");
-    //  shape.setAttributeNS(null, "points", 100, 100);
-    // shape.setAttributeNS(null, "points", 100, 50);
+    shape.setAttributeNS(null, "points", createPolygonPoints());
     shape.setAttributeNS(null, "fill", "red");
     svg2.appendChild(shape);
-}
+};
+
+function createPolygonPoints() {
+    let tempPlayPoints = LINE_POINTS;
+    return tempPlayPoints.map(el => `${el.x-70},${el.y-100} `).reduce((acc, el) => acc + el);
+};
 
 function updateInfo() {
     let info = document.querySelector('.info');
@@ -80,10 +106,10 @@ function updateInfo() {
 
 function setInitialPlayAreaBorders() {
     let playArea = document.querySelector('#playArea').getBoundingClientRect(),
-        minX = Math.floor(playArea.left),
-        maxX = Math.ceil(playArea.right),
-        minY = Math.floor(playArea.top),
-        maxY = Math.ceil(playArea.bottom);
+        minX = Math.ceil(playArea.left),
+        maxX = Math.ceil(playArea.right - 2),
+        minY = Math.ceil(playArea.top),
+        maxY = Math.ceil(playArea.bottom - 2);
     PLAY_AREA.push(new Vector(minX, minY));
     PLAY_AREA.push(new Vector(minX, maxY));
     PLAY_AREA.push(new Vector(maxX, minY));
@@ -99,8 +125,8 @@ function checkKeys(e) {
 };
 
 function checkMove(code) {
-    const spiderCoord = document.querySelector('.spider').getBoundingClientRect();
-    let ENTERED = hasEntered(spiderCoord); // enterPlayArea(spiderCoord);
+    const spiderCoord = getSpiderCoord();
+    let ENTERED = hasEntered(spiderCoord);
     console.log(ENTERED);
     setPoints(spiderCoord, code, ENTERED);
     switch (code) {
@@ -119,37 +145,45 @@ function checkMove(code) {
     }
 };
 
+function getSpiderCoord() {
+    let spiderStyle = document.querySelector('.spider').style;
+    let left = Number(spiderStyle.left.slice(0, spiderStyle.left.indexOf('p')));
+    let top = Number(spiderStyle.top.slice(0, spiderStyle.top.indexOf('p')));
+    let halfWidth = Math.ceil(Number(spiderStyle.width.slice(0, spiderStyle.width.indexOf('p'))) / 2);
+    return new Vector(left + halfWidth, top + halfWidth);
+};
+
 function checkMoveUp(spiderCoord) {
-    if (spiderCoord.top <= BOUNDARY.top) {
+    if (spiderCoord.y <= BOUNDARY.top) {
         return;
     }
     removeSpider();
-    createSpider(spiderCoord.left, spiderCoord.top - 1 * SPEED);
+    createSpider(spiderCoord.x, spiderCoord.y - SPEED);
 };
 
 function checkMoveDown(spiderCoord) {
-    if (spiderCoord.bottom >= BOUNDARY.bottom) {
+    if (spiderCoord.y >= BOUNDARY.bottom) {
         return;
     }
     removeSpider();
-    createSpider(spiderCoord.left, spiderCoord.top + 1 * SPEED);
+    createSpider(spiderCoord.x, spiderCoord.y + SPEED);
 };
 
 
 function checkMoveLeft(spiderCoord) {
-    if (spiderCoord.left <= BOUNDARY.left) {
+    if (spiderCoord.x <= BOUNDARY.left) {
         return;
     }
     removeSpider();
-    createSpider(spiderCoord.left - 1 * SPEED, spiderCoord.top);
+    createSpider(spiderCoord.x - SPEED, spiderCoord.y);
 };
 
 function checkMoveRight(spiderCoord) {
-    if (spiderCoord.right >= BOUNDARY.right) {
+    if (spiderCoord.x >= BOUNDARY.right) {
         return;
     }
     removeSpider();
-    createSpider(spiderCoord.left + 1 * SPEED, spiderCoord.top);
+    createSpider(spiderCoord.x + SPEED, spiderCoord.y);
 };
 
 function setPoints(spiderCoord, code, ENTERED) {
@@ -160,7 +194,7 @@ function setPoints(spiderCoord, code, ENTERED) {
         return
         // first time entered
     } else if (ENTERED) {
-        LINE_POINTS.push(new Vector(spiderCoord.left + spiderCoord.width / 2, spiderCoord.top + spiderCoord.height / 2));
+        LINE_POINTS.push(spiderCoord);
         NUM++;
         LAST_DIRECTION = code;
         removeline();
@@ -168,7 +202,7 @@ function setPoints(spiderCoord, code, ENTERED) {
         console.log(LINE_POINTS);
         // finished drawing
     } else if (!ENTERED && LINE_POINTS.length !== 0) {
-        LINE_POINTS.push(new Vector(spiderCoord.left + spiderCoord.width / 2, spiderCoord.top + spiderCoord.height / 2));
+        LINE_POINTS.push(spiderCoord);
         buildOwnedArea();
         LINE_POINTS = [];
         NUM = 0;
@@ -178,12 +212,47 @@ function setPoints(spiderCoord, code, ENTERED) {
 
 function buildOwnedArea() {
     // Line points add to area points
-    PLAY_AREA = PLAY_AREA.concat(LINE_POINTS);
+    calculateNewAreaPoints();
     //should filter out points that are in safe zone
     sortAreaPoints();
-    // build cancas
-    buildSafeArae2();
+    buildSafeArea();
     console.log('budowaniediva');
+};
+
+function calculateNewAreaPoints() {
+    let pointsToRemove = [];
+    if (isPossibleBuildArea(LINE_POINTS)) {
+        PLAY_AREA = PLAY_AREA.concat(LINE_POINTS);
+    } else {
+        //ten else nie uwzglednia 2 pktowo !!!!
+        PLAY_AREA.forEach(point => {
+            let tempLinePoints = LINE_POINTS;
+            if (isPossibleBuildArea(tempLinePoints.concat(point))) {
+                pointsToRemove.push(point);
+                return;
+            }
+        });
+        //PLAY_AREA = PLAY_AREA.concat(LINE_POINTS);
+        //PLAY_AREA = PLAY_AREA.filter(p => p.x === pointsToRemove[0].x && p.y === pointsToRemove[0].y);
+    }
+};
+
+function isPossibleBuildArea(points) {
+    let minX = points[0].x;
+    let maxX = points[0].x;
+    let minY = points[0].y;
+    let maxY = points[0].y;
+    let sumX = 0,
+        sumY = 0;
+    points.forEach(p => {
+        if (p.x < minX) { minX = p.x }
+        if (p.x > maxX) { maxX = p.x }
+        if (p.y < minY) { minY = p.y }
+        if (p.y > maxY) { maxY = p.y }
+        sumX += p.x;
+        sumY += p.y;
+    });
+    return sumX - ((maxX + minX) * 2) === 0 && sumY - ((maxY + minY) * 2) === 0;
 };
 
 function removeline() {
@@ -201,38 +270,36 @@ function drawLine(spiderCoord) {
     element.style.top = `${LINE_POINTS[LINE_POINTS.length - 1].y}px`;
     switch (LAST_DIRECTION) {
         case 'ArrowUp':
-            element.style.left = `${spiderCoord.left + spiderCoord.width / 2}px`;
-            element.style.top = `${spiderCoord.top + spiderCoord.height / 2}px`;
-            element.style.height = `${(LINE_POINTS[LINE_POINTS.length - 1].y) - (spiderCoord.top + spiderCoord.height / 2)}px`;
+            element.style.left = `${spiderCoord.x}px`;
+            element.style.top = `${spiderCoord.y}px`;
+            element.style.height = `${(LINE_POINTS[LINE_POINTS.length - 1].y) - (spiderCoord.y)}px`;
             element.style.width = '1px';
             break;
         case 'ArrowDown':
             element.style.left = `${LINE_POINTS[LINE_POINTS.length - 1].x}px`;
             element.style.top = `${LINE_POINTS[LINE_POINTS.length - 1].y}px`;
-            element.style.height = `${(spiderCoord.top + spiderCoord.height / 2) - (LINE_POINTS[LINE_POINTS.length - 1].y)}px`;
+            element.style.height = `${(spiderCoord.y) - (LINE_POINTS[LINE_POINTS.length - 1].y)}px`;
             element.style.width = '1px';
             break;
         case 'ArrowLeft':
-            element.style.left = `${spiderCoord.left + spiderCoord.width / 2}px`;
-            element.style.top = `${spiderCoord.top + spiderCoord.height / 2}px`;
-            element.style.width = `${LINE_POINTS[LINE_POINTS.length - 1].x - (spiderCoord.left + spiderCoord.width / 2)}px`;
+            element.style.left = `${spiderCoord.x}px`;
+            element.style.top = `${spiderCoord.y}px`;
+            element.style.width = `${LINE_POINTS[LINE_POINTS.length - 1].x - (spiderCoord.x)}px`;
             element.style.height = '1px';
             break;
         case 'ArrowRight':
             element.style.left = `${LINE_POINTS[LINE_POINTS.length - 1].x}px`;
             element.style.top = `${LINE_POINTS[LINE_POINTS.length - 1].y}px`;
-            element.style.width = `${(spiderCoord.left + spiderCoord.width / 2) - (LINE_POINTS[LINE_POINTS.length - 1].x)}px`;
+            element.style.width = `${(spiderCoord.x) - (LINE_POINTS[LINE_POINTS.length - 1].x)}px`;
             element.style.height = '1px';
             break;
     }
     console.log('width: ' + element.style.width + ' | height: ' + element.style.height);
-    document.querySelector('.gameboard').appendChild(element);
+    document.body.appendChild(element);
 };
 
 function hasEntered(spiderCoord) {
     let intersectings = 0;
-    let spiderX = spiderCoord.left + spiderCoord.width / 2;
-    let spiderY = spiderCoord.bottom - spiderCoord.height / 2
     for (let i = 0; i < PLAY_AREA.length; i++) {
         let p, q;
         if (i === PLAY_AREA.length - 1) {
@@ -242,9 +309,9 @@ function hasEntered(spiderCoord) {
             p = PLAY_AREA[i];
             q = PLAY_AREA[i + 1]
         }
-        if (spiderX <= Math.max(p.x, q.x) &&
-            spiderY >= Math.min(p.y, q.y) &&
-            spiderY < Math.max(p.y, q.y)) {
+        if (spiderCoord.x <= Math.max(p.x, q.x) &&
+            spiderCoord.y >= Math.min(p.y, q.y) &&
+            spiderCoord.y < Math.max(p.y, q.y)) {
             intersectings++;
         }
     }
