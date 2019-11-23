@@ -53,7 +53,6 @@ function createGameBoard() {
     let playArea = document.createElement('div');
     playArea.className = 'playArea';
     gameboard.appendChild(playArea);
-
     document.body.appendChild(gameboard);
 };
 
@@ -230,7 +229,6 @@ function buildOwnedArea() {
     calculateNewAreaPoints();
     sortAreaPoints();
     buildSafeArea();
-    console.log('budowaniediva');
 };
 
 function calculateNewAreaPoints() {
@@ -277,6 +275,7 @@ function removeline() {
 };
 
 function drawLine(spiderCoord) {
+    if (LINE_POINTS.length === 0) { return; }
     let element = document.createElement('div');
     element.id = 'line';
     element.className = `c${NUM}`
@@ -306,7 +305,6 @@ function drawLine(spiderCoord) {
             element.style.height = '1px';
             break;
     }
-    console.log('width: ' + element.style.width + ' | height: ' + element.style.height);
     document.body.appendChild(element);
 };
 
@@ -323,7 +321,7 @@ function hasEntered(spiderCoord, spiderNextCoord) {
             q = PLAY_AREA[i + 1]
         }
         if (poitsToCheck.x <= Math.max(p.x, q.x) &&
-            poitsToCheck.y >= Math.min(p.y, q.y) &&
+            poitsToCheck.y - 1 >= Math.min(p.y, q.y) &&
             poitsToCheck.y < Math.max(p.y, q.y)) {
             intersectings++;
         }
