@@ -2,12 +2,13 @@ let BOUNDARY = {};
 let PLAY_AREA = [];
 const SVGNS = "http://www.w3.org/2000/svg";
 const KEYS = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
-let SPEED = 3;
+let SPEED = 1;
 let LIVES = 3;
 let LINE_POINTS = [];
 let LAST_DIRECTION = null;
 let NUM = 0;
 let CANVAS_ID = 0;
+let ENTERED = false;
 
 function start() {
     createBoundaryPoints();
@@ -65,7 +66,7 @@ function createSpider(x, y) {
         newSpider.style.left = '20px';
         newSpider.style.top = '100px'
     } else {
-        newSpider.style.left = `${x - 5}px`; //half of the width plus border
+        newSpider.style.left = `${x - 5}px`; //half of the width
         newSpider.style.top = `${y - 5}px`;
     }
     document.body.appendChild(newSpider);
@@ -96,7 +97,7 @@ function buildSafeArea() {
 
 function createPolygonPoints() {
     let tempPlayPoints = LINE_POINTS;
-    return tempPlayPoints.map(el => `${el.x-70},${el.y-100} `).reduce((acc, el) => acc + el);
+    return tempPlayPoints.map(el => `${el.x - 70},${el.y - 100} `).reduce((acc, el) => acc + el);
 };
 
 function updateInfo() {
@@ -126,9 +127,10 @@ function checkKeys(e) {
 
 function checkMove(code) {
     const spiderCoord = getSpiderCoord();
-    let ENTERED = hasEntered(spiderCoord);
+    const spiderNextCoord = getSpiderNextCoord(spiderCoord, code);
+    ENTERED = hasEntered(spiderCoord, spiderNextCoord);
     console.log(ENTERED);
-    setPoints(spiderCoord, code, ENTERED);
+    setPoints(spiderCoord, spiderNextCoord, code);
     switch (code) {
         case 'ArrowUp':
             checkMoveUp(spiderCoord);
@@ -151,6 +153,20 @@ function getSpiderCoord() {
     let top = Number(spiderStyle.top.slice(0, spiderStyle.top.indexOf('p')));
     let halfWidth = Math.ceil(Number(spiderStyle.width.slice(0, spiderStyle.width.indexOf('p'))) / 2);
     return new Vector(left + halfWidth, top + halfWidth);
+};
+
+function getSpiderNextCoord(spiderCoord, code) {
+    let nextCoord;
+    switch (code) {
+        case 'ArrowUp':
+            return nextCoord = new Vector(spiderCoord.x, spiderCoord.y - SPEED);
+        case 'ArrowDown':
+            return nextCoord = new Vector(spiderCoord.x, spiderCoord.y + SPEED);
+        case 'ArrowLeft':
+            return nextCoord = new Vector(spiderCoord.x - SPEED, spiderCoord.y);
+        case 'ArrowRight':
+            return nextCoord = new Vector(spiderCoord.x + SPEED, spiderCoord.y);
+    }
 };
 
 function checkMoveUp(spiderCoord) {
@@ -186,13 +202,13 @@ function checkMoveRight(spiderCoord) {
     createSpider(spiderCoord.x + SPEED, spiderCoord.y);
 };
 
-function setPoints(spiderCoord, code, ENTERED) {
+function setPoints(spiderCoord, spiderNextCoord, code) {
     //continue drawing insie Area
     if (code === LAST_DIRECTION && ENTERED) {
         removeline();
-        drawLine(spiderCoord);
+        drawLine(spiderNextCoord);
         return
-        // first time entered
+        // first time entered or changed direction
     } else if (ENTERED) {
         LINE_POINTS.push(spiderCoord);
         NUM++;
@@ -211,9 +227,7 @@ function setPoints(spiderCoord, code, ENTERED) {
 };
 
 function buildOwnedArea() {
-    // Line points add to area points
     calculateNewAreaPoints();
-    //should filter out points that are in safe zone
     sortAreaPoints();
     buildSafeArea();
     console.log('budowaniediva');
@@ -266,8 +280,6 @@ function drawLine(spiderCoord) {
     let element = document.createElement('div');
     element.id = 'line';
     element.className = `c${NUM}`
-    element.style.left = `${LINE_POINTS[LINE_POINTS.length - 1].x}px`;
-    element.style.top = `${LINE_POINTS[LINE_POINTS.length - 1].y}px`;
     switch (LAST_DIRECTION) {
         case 'ArrowUp':
             element.style.left = `${spiderCoord.x}px`;
@@ -298,7 +310,8 @@ function drawLine(spiderCoord) {
     document.body.appendChild(element);
 };
 
-function hasEntered(spiderCoord) {
+function hasEntered(spiderCoord, spiderNextCoord) {
+    let poitsToCheck = ENTERED ? spiderCoord : spiderNextCoord;
     let intersectings = 0;
     for (let i = 0; i < PLAY_AREA.length; i++) {
         let p, q;
@@ -309,9 +322,9 @@ function hasEntered(spiderCoord) {
             p = PLAY_AREA[i];
             q = PLAY_AREA[i + 1]
         }
-        if (spiderCoord.x <= Math.max(p.x, q.x) &&
-            spiderCoord.y >= Math.min(p.y, q.y) &&
-            spiderCoord.y < Math.max(p.y, q.y)) {
+        if (poitsToCheck.x <= Math.max(p.x, q.x) &&
+            poitsToCheck.y >= Math.min(p.y, q.y) &&
+            poitsToCheck.y < Math.max(p.y, q.y)) {
             intersectings++;
         }
     }

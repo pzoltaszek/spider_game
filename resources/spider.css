@@ -51,6 +51,8 @@
 
 #line {
     position: absolute;
+    padding: none;
+    border: none;
     color: black;
     background-color: black;
 }
